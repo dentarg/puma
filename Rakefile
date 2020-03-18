@@ -73,7 +73,7 @@ end
 
 namespace :test do
   desc "Run the integration tests"
-  
+
   task :integration do
     sh "ruby test/shell/run.rb"
   end
@@ -87,3 +87,5 @@ namespace :test do
 end
 
 task :default => [:rubocop, "test:all"]
+
+# foo
