@@ -218,6 +218,7 @@ module Puma
     def write_error(status_code)
       begin
         @io << ERROR_RESPONSE[status_code]
+        @io.flush
       rescue StandardError
       end
     end
