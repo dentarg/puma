@@ -211,7 +211,7 @@ module Puma
     end
 
     def timeout!
-      write_error(408) if in_data_phase
+      write_error(413) if in_data_phase
       raise ConnectionError
     end
 

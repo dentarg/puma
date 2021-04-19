@@ -143,6 +143,8 @@ module Puma
       404 => "HTTP/1.1 404 Not Found\r\nConnection: close\r\nServer: Puma #{PUMA_VERSION}\r\n\r\nNOT FOUND".freeze,
       # The standard empty 408 response for requests that timed out.
       408 => "HTTP/1.1 408 Request Timeout\r\nConnection: close\r\nServer: Puma #{PUMA_VERSION}\r\n\r\n".freeze,
+      # The standard empty 413 response for too large requests.
+      413 => "HTTP/1.1 413 Payload Too Large \r\nConnection: close\r\nServer: Puma #{PUMA_VERSION}\r\n\r\n".freeze,
       # Indicate that there was an internal error, obviously.
       500 => "HTTP/1.1 500 Internal Server Error\r\n\r\n".freeze,
       # A common header for indicating the server is too busy.  Not used yet.
