@@ -101,7 +101,7 @@ module Puma
   module Const
 
     PUMA_VERSION = VERSION = "5.2.2".freeze
-    CODE_NAME = "Fettisdagsbulle".freeze
+    CODE_NAME = "SEMLA".freeze
 
     PUMA_SERVER_STRING = ['puma', PUMA_VERSION, CODE_NAME].join(' ').freeze
 
