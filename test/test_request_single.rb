@@ -726,3 +726,39 @@ class TestRequestReset < TestRequestBase
     assert_nil @client.error_status_code
   end
 end
+
+class TestPeerip < TestRequestBase
+
+  def test_peerip_unmaps_ipv4_mapped_ipv6
+    peer_addr = -> () { ["AF_INET6", 80, "::ffff:127.0.0.1", "::ffff:127.0.0.1"] }
+    create_client("GET / HTTP/1.1\r\n\r\n") {
+      @rd.define_singleton_method(:peeraddr, peer_addr)
+    }
+
+    assert_equal "127.0.0.1", @client.peerip
+  end
+
+  def test_remote_addr_unmaps_ipv4_mapped_ipv6
+    peer_addr = -> () { ["AF_INET6", 80, "::ffff:10.1.2.3", "::ffff:10.1.2.3"] }
+    create_client("GET / HTTP/1.1\r\n\r\n") {
+      @rd.define_singleton_method(:peeraddr, peer_addr)
+    }
+
+    assert_equal "10.1.2.3", @client.env["REMOTE_ADDR"]
+  end
+
+  def test_peerip_preserves_plain_ipv4
+    create_client("GET / HTTP/1.1\r\n\r\n")
+
+    assert_equal "127.0.0.1", @client.peerip
+  end
+
+  def test_peerip_preserves_native_ipv6
+    peer_addr = -> () { ["AF_INET6", 80, "::1", "::1"] }
+    create_client("GET / HTTP/1.1\r\n\r\n") {
+      @rd.define_singleton_method(:peeraddr, peer_addr)
+    }
+
+    assert_equal "::1", @client.peerip
+  end
+end
