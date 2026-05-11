@@ -5,9 +5,6 @@ require 'puma/const'
 require_relative "helper"
 
 class TestEvents < PumaTest
-  # The on_booted/on_restart/on_stopped methods were deprecated and are
-  # scheduled for removal in Puma v9. Fail loudly once the version bumps
-  # past 8 so we remember to remove them.
   def test_deprecated_event_methods_are_removed_in_v9
     refute_operator Gem::Version.new(Puma::Const::PUMA_VERSION), :>=, Gem::Version.new("9"),
       "Remove deprecated on_booted/on_restart/on_stopped from Puma::Events and their tests"
