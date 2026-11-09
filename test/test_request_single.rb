@@ -629,6 +629,37 @@ class TestRequestHeadersInvalid < TestRequestBase
       "Invalid Host header",
       status: 400
   end
+
+  def test_invalid_port_host_http11
+    assert_invalid "GET / HTTP/1.1\r\nHost: example.com:x43%\r\n\r\n",
+      "Invalid Host header",
+      status: 400
+  end
+
+  def test_invalid_characters_host_http11
+    assert_invalid "GET / HTTP/1.1\r\nHost: ${ip}\r\n\r\n",
+      "Invalid Host header",
+      status: 400
+  end
+
+  def test_invalid_ipv6_host_http10
+    assert_invalid "GET / HTTP/1.0\r\nHost: [::1\r\n\r\n",
+      "Invalid Host header",
+      status: 400
+  end
+
+  def test_multiple_hosts_http11
+    assert_invalid "GET / HTTP/1.1\r\nHost: a.example.com\r\nHost: b.example.com\r\n\r\n",
+      "Invalid Host header",
+      status: 400
+  end
+
+  def test_empty_port_host
+    create_client "GET / HTTP/1.1\r\nHost: example.com:\r\n\r\n"
+
+    assert_equal 'example.com', @client.env[SERVER_NAME]
+    assert_equal '80', @client.env[SERVER_PORT]
+  end
 end
 
 # Tests requests with invalid Content-Length header

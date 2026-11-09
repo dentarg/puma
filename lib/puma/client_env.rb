@@ -12,20 +12,53 @@ module Puma
 
     include Puma::Const
 
+    # RFC 3986 host, the same as URI::RFC3986_Parser::HOST, which the uri gem
+    # only has from 0.13 (Ruby 3.3)
+    RFC3986_HOST = %r[
+      (?<IP-literal>\[(?:
+          (?<IPv6address>
+            (?:\h{1,4}:){6}
+            (?<ls32>\h{1,4}:\h{1,4}
+            | (?<IPv4address>(?<dec-octet>[1-9]\d|1\d{2}|2[0-4]\d|25[0-5]|\d)
+                \.\g<dec-octet>\.\g<dec-octet>\.\g<dec-octet>)
+            )
+          | ::(?:\h{1,4}:){5}\g<ls32>
+          | \h{1,4}?::(?:\h{1,4}:){4}\g<ls32>
+          | (?:(?:\h{1,4}:)?\h{1,4})?::(?:\h{1,4}:){3}\g<ls32>
+          | (?:(?:\h{1,4}:){,2}\h{1,4})?::(?:\h{1,4}:){2}\g<ls32>
+          | (?:(?:\h{1,4}:){,3}\h{1,4})?::\h{1,4}:\g<ls32>
+          | (?:(?:\h{1,4}:){,4}\h{1,4})?::\g<ls32>
+          | (?:(?:\h{1,4}:){,5}\h{1,4})?::\h{1,4}
+          | (?:(?:\h{1,4}:){,6}\h{1,4})?::
+          )
+        | (?<IPvFuture>v\h++\.[!$&-.0-9:;=A-Z_a-z~]++)
+        )\])
+    | \g<IPv4address>
+    | (?<reg-name>(?:%\h\h|[!$&-.0-9;=A-Z_a-z~])*+)
+    ]x
+
+    # A host with an optional port, what Rack::Lint accepts as HTTP_HOST
+    HTTP_HOST_PATTERN = /\A#{RFC3986_HOST}(?::\d*+)?\z/
+
+    private_constant :RFC3986_HOST, :HTTP_HOST_PATTERN
+
+    # RFC 9112 Section 3.2: respond 400 to an invalid Host, and to an
+    # HTTP/1.1 request without one
     def validate_env
+      host = @env[HTTP_HOST]
+
+      reject_host "Invalid Host header" if host && !host.match?(HTTP_HOST_PATTERN)
+
       return unless @env[SERVER_PROTOCOL] == HTTP_11
 
-      unless @env.key? HTTP_HOST
-        @error_status_code = 400
-        @env[HTTP_CONNECTION] = CLOSE
-        raise HttpParserError, "Missing Host header"
-      end
+      reject_host "Missing Host header" unless host
+      reject_host "Invalid Host header" if host.empty?
+    end
 
-      if @env[HTTP_HOST].empty?
-        @error_status_code = 400
-        @env[HTTP_CONNECTION] = CLOSE
-        raise HttpParserError, "Invalid Host header"
-      end
+    def reject_host(message)
+      @error_status_code = 400
+      @env[HTTP_CONNECTION] = CLOSE
+      raise HttpParserError, message
     end
 
     # Given a Hash +env+ for the request read from +client+, add
@@ -46,6 +79,8 @@ module Puma
           @env[SERVER_NAME] = host
           @env[SERVER_PORT] = default_server_port
         end
+        # RFC 3986 allows an empty port, e.g. "example.com:"
+        @env[SERVER_PORT] = default_server_port if @env[SERVER_PORT].empty?
       else
         @env[SERVER_NAME] = LOCALHOST
         @env[SERVER_PORT] = default_server_port
